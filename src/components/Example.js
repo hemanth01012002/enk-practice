@@ -1,79 +1,39 @@
-import React, { useState } from "react";
-import Grid from "@mui/material/Grid2";
+import React, { useState, useEffect } from "react";
 import {
-  TextField,
-  Button,
-  Radio,
-  RadioGroup,
-  FormControlLabel,
-  FormControl,
-  FormLabel,
-  Autocomplete,
-  InputAdornment,
-  Card,
   Box,
-  Typography,
-  Checkbox,
+  Button,
+  InputAdornment,
+  Modal,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Paper,
   IconButton,
+  TextField,
+  Typography,
 } from "@mui/material";
+import Grid from "@mui/material/Grid2";
 import { Formik, Form, Field, ErrorMessage } from "formik";
 import * as Yup from "yup";
-import VisibilityOffIcon from "@mui/icons-material/VisibilityOff";
-import VisibilityIcon from "@mui/icons-material/Visibility";
-import KeyboardBackspaceIcon from "@mui/icons-material/KeyboardBackspace";
-import FullscreenIcon from "@mui/icons-material/Fullscreen";
-import FullscreenExitIcon from '@mui/icons-material/FullscreenExit';
-const validationSchema = Yup.object({
-  firstName: Yup.string().required("First Name is required"),
-  lastName: Yup.string().required("Last Name is required"),
-  email: Yup.string()
-    .matches(
-      /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/,
-      "Invalid email format"
-    )
-    .required("Email is required"),
-  dateOfBirth: Yup.date()
-    .required("Date of Birth is required")
-    .typeError("Invalid date"),
-  mobileNumber: Yup.string()
-    .matches(/^[0-9]{10}$/, "Must be a valid 10-digit number")
-    .required("Mobile Number is required"),
-  emergencyContact: Yup.string().matches(
-    /^[0-9]{10}$/,
-    "Must be a valid 10-digit number"
-  ),
-  password: Yup.string()
-    .matches(
-      /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{6,}$/,
-      "Password must have at least 1 uppercase, 1 lowercase, 1 number, 1 symbol, and 6+ characters"
-    )
-    .required("Password is required"),
-  confirmPassword: Yup.string()
-    .oneOf([Yup.ref("password"), null], "Passwords must match")
-    .required("Confirm Password is required"),
-  gender: Yup.string().required("Gender is required"),
-  bloodGroup: Yup.string(),
-  newsletter: Yup.boolean().required("Newsletter subscription is required"),
-  uploadedFile: Yup.mixed().required("File upload is required"),
-});
-
-// Blood Group options
-const bloodGroupOptions = [
-  { label: "A+", value: "A+" },
-  { label: "A-", value: "A-" },
-  { label: "B+", value: "B+" },
-  { label: "B-", value: "B-" },
-  { label: "AB+", value: "AB+" },
-  { label: "AB-", value: "AB-" },
-  { label: "O+", value: "O+" },
-  { label: "O-", value: "O-" },
-];
+import EditIcon from "@mui/icons-material/Edit";
+import DeleteIcon from "@mui/icons-material/Delete";
+import ClearIcon from "@mui/icons-material/Clear";
+import CalendarTodayIcon from "@mui/icons-material/CalendarToday";
+import { useNavigate } from "react-router-dom";
+import { useDispatch, useSelector } from "react-redux";
+import { addFormData, updateFormData, deleteFormData } from "../Redux/formReducer"; // Import redux actions
+import DatePicker from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css"; // Import datepicker styles
 
 const Example = () => {
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [selectedFile, setSelectedFile] = useState(null);
-  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [open, setOpen] = useState(false); // For Modal
+  const [editIndex, setEditIndex] = useState(null); // Index of the row being edited
+  const data = useSelector((state) => state.form.data); // Get form data from Redux
+  const dispatch = useDispatch(); // Dispatch actions to Redux
+  const navigate = useNavigate(); // Navigation to other pages
 
   const initialValues = {
     firstName: "",
@@ -81,305 +41,290 @@ const Example = () => {
     email: "",
     dateOfBirth: "",
     mobileNumber: "",
-    emergencyContact: "",
-    password: "",
-    confirmPassword: "",
-    gender: "",
-    bloodGroup: "",
-    newsletter: false,
-    uploadedFile: null,
   };
 
-  // Handle form submission
-  const onSubmit = (values) => {
-    alert("Registration Successful!");
-    console.log("Form Submitted:", values);
+  const validationSchema = Yup.object().shape({
+    firstName: Yup.string().required("First name is required"),
+    lastName: Yup.string().required("Last name is required"),
+    email: Yup.string()
+      .email("Invalid email")
+      .required("Email is required")
+      .matches(
+        /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/,
+        "Invalid email format"
+      ),
+    dateOfBirth: Yup.date()
+      .required("Date of birth is required")
+      .max(new Date(2006, 11, 31), "Date of birth must be before December 31, 2006")
+      .test(
+        "is-18",
+        "You must be at least 18 years old",
+        (value) => {
+          const today = new Date();
+          const dob = new Date(value);
+          const age = today.getFullYear() - dob.getFullYear();
+          const monthDifference = today.getMonth() - dob.getMonth();
+          const dayDifference = today.getDate() - dob.getDate();
+          return (
+            age > 18 ||
+            (age === 18 && (monthDifference > 0 || (monthDifference === 0 && dayDifference >= 0)))
+          );
+        }
+      ),
+    mobileNumber: Yup.string()
+      .matches(/^\d{10}$/, "Mobile number must be exactly 10 digits")
+      .required("Mobile number is required"),
+  });
+
+  const handleOpen = () => setOpen(true);
+  const handleClose = () => {
+    setOpen(false);
+    setEditIndex(null);
   };
 
-  // Handle mobile number input
-  const handleNumberInput = (e, setFieldValue, fieldName) => {
-    const value = e.target.value.replace(/\D/g, "").slice(0, 10);
-    setFieldValue(fieldName, value);
-  };
-
-   // Fullscreen toggle logic
-   const handleFullscreen = () => {
-    if (!document.fullscreenElement) {
-      document.documentElement.requestFullscreen();
-      setIsFullscreen(true);
+  const handleSubmit = (values) => {
+    if (editIndex !== null) {
+      dispatch(updateFormData(editIndex, values)); // Update existing row
     } else {
-      document.exitFullscreen();
-      setIsFullscreen(false);
+      dispatch(addFormData({ ...values, id: data.length + 1 })); // Add new row
+    }
+    handleClose();
+  };
+
+  const handleDelete = (index) => {
+    const confirmDelete = window.confirm("Are you sure you want to delete this record?");
+    if (confirmDelete) {
+      dispatch(deleteFormData(index)); // Delete row
+    }
+  };
+  const handleEdit = (index) => {
+    setEditIndex(index);
+    setOpen(true);
+  };
+
+  const handleShowData = (id) => {
+    const person = data.find((row) => row.id === id);
+    navigate(`/user/datapage/${id}`, { state: { person } });
+  };
+
+  // Function to format the phone number input
+  const handleNumberInput = (e, setFieldValue, fieldName) => {
+    const value = e.target.value.replace(/\D/g, ""); // Remove non-numeric characters
+    if (value.length <= 10) {
+      setFieldValue(fieldName, value); // Update the field value
     }
   };
 
   return (
-    <Box sx={{ maxWidth: 600, margin: "auto", padding: 3, }}>
-      <Card elevation={3} sx={{ textAlign: "center", padding: 2, borderRadius: 3 }}>
-      <Grid container justifyContent="flex-end">
-          <KeyboardBackspaceIcon style={{ cursor: "pointer", marginRight: 30, marginTop:8 }} />
-          <IconButton onClick={handleFullscreen}>
-            {isFullscreen ? (
-              <FullscreenExitIcon style={{ color: "black" }} />
-            ) : (
-              <FullscreenIcon style={{ color: "black" }} />
-            )}
-          </IconButton>
-        </Grid>
-        <Typography sx={{ fontSize: 20, marginTop: 1 }}>
-          <b>Register</b>
-        </Typography>
-        <Formik
-          initialValues={initialValues}
-          validationSchema={validationSchema}
-          onSubmit={onSubmit}
+    <Box sx={{ maxWidth: 1000, margin: "auto", padding: 3 }}>
+      <Button variant="contained" onClick={handleOpen}>
+        Add
+      </Button>
+
+      <Modal open={open}>
+        <Box
+          sx={{
+            position: "absolute",
+            top: "50%",
+            left: "50%",
+            transform: "translate(-50%, -50%)",
+            width: 600,
+            bgcolor: "background.paper",
+            boxShadow: 24,
+            p: 4,
+            borderRadius: 2,
+          }}
         >
-          {({ errors, touched, setFieldValue, values }) => (
-            <Form>
-              <Grid container spacing={2}>
-                {/* First Name */}
-                <Grid size={{ xs: 12, sm: 6 }}>
-                  <Field
-                    as={TextField}
-                    label="First Name"
-                    name="firstName"
-                    fullWidth
-                    size="small"
-                    margin="normal"
-                    error={errors.firstName && touched.firstName}
-                    helperText={<ErrorMessage name="firstName" />}
-                  />
-                </Grid>
-                {/* Last Name */}
-                <Grid size={{ xs: 12, sm: 6 }}>
-                  <Field
-                    as={TextField}
-                    label="Last Name"
-                    name="lastName"
-                    fullWidth
-                    size="small"
-                    margin="normal"
-                    error={errors.lastName && touched.lastName}
-                    helperText={<ErrorMessage name="lastName" />}
-                  />
-                </Grid>
-                {/* Email */}
-                <Grid size={{ xs: 12, sm: 6 }}>
-                  <Field
-                    as={TextField}
-                    label="Email Address"
-                    name="email"
-                    fullWidth
-                    size="small"
-                    margin="normal"
-                    error={errors.email && touched.email}
-                    helperText={<ErrorMessage name="email" />}
-                  />
-                </Grid>
-                {/* Date of Birth */}
-                <Grid size={{xs: 12, sm: 6 }}>
-                  <Field
-                    as={TextField}
-                    label="Date of Birth"
-                    name="dateOfBirth"
-                    type="date"
-                    fullWidth
-                    size="small"
-                    margin="normal"
-                    InputLabelProps={{ shrink: true }}
-                    error={errors.dateOfBirth && touched.dateOfBirth}
-                    helperText={<ErrorMessage name="dateOfBirth" />}
-                  />
-                </Grid>
-                {/* Mobile number */}
-                <Grid size={{ xs: 12, sm: 6 }}>
-                  <TextField
-                    label="Mobile Number"
-                    name="mobileNumber"
-                    fullWidth
-                    size="small"
-                    margin="normal"
-                    value={values.mobileNumber}
-                    onChange={(e) => handleNumberInput(e, setFieldValue, "mobileNumber")}
-                    error={errors.mobileNumber && touched.mobileNumber}
-                    helperText={<ErrorMessage name="mobileNumber" />}
-                  />
-                </Grid>
-                {/* Emergency Contact */}
-                <Grid size={{ xs: 12, sm: 6 }}>
-                  <TextField
-                    label="Emergency Contact"
-                    name="emergencyContact"
-                    fullWidth
-                    size="small"
-                    margin="normal"
-                    value={values.emergencyContact}
-                    onChange={(e) => handleNumberInput(e, setFieldValue, "emergencyContact")}
-                    error={errors.emergencyContact && touched.emergencyContact}
-                    helperText={<ErrorMessage name="emergencyContact" />}
-                  />
-                </Grid>
-                {/* Password */}
-                <Grid size={{ xs: 12, sm: 6 }}>
-                  <Field
-                    as={TextField}
-                    label="Create Password"
-                    name="password"
-                    type={showPassword ? "text" : "password"}
-                    fullWidth
-                    size="small"
-                    margin="normal"
-                    error={errors.password && touched.password}
-                    helperText={<ErrorMessage name="password" />}
-                    InputProps={{
-                      endAdornment: (
-                        <InputAdornment position="end">
-                          <IconButton onClick={() => setShowPassword((prev) => !prev)}>
-                            {showPassword ? <VisibilityIcon style={{color:"black"}}/> : <VisibilityOffIcon style={{color:"black"}}/>}
-                          </IconButton>
-                        </InputAdornment>
-                      ),
-                    }}
-                  />
-                </Grid>
-                {/* Confirm Password */}
-                <Grid size={{ xs: 12, sm: 6 }}>
-                  <Field
-                    as={TextField}
-                    label="Confirm Password"
-                    name="confirmPassword"
-                    type={showConfirmPassword ? "text" : "password"}
-                    fullWidth
-                    size="small"
-                    margin="normal"
-                    error={errors.confirmPassword && touched.confirmPassword}
-                    helperText={<ErrorMessage name="confirmPassword" />}
-                    InputProps={{
-                      endAdornment: (
-                        <InputAdornment position="end">
-                          <IconButton onClick={() => setShowConfirmPassword((prev) => !prev)}>
-                            {showConfirmPassword ? <VisibilityIcon style={{color:"black"}}/> : <VisibilityOffIcon style={{color:"black"}}/>}
-                          </IconButton>
-                        </InputAdornment>
-                      ),
-                    }}
-                  />
-                </Grid>
-                {/* Gender */}
-                <Grid size={{ xs: 12 }} sx={{ display: "flex", justifyItems: "left", gap: "30px" }}>
-                  <FormControl component="fieldset" margin="normal" sx={{ textAlign: "left", marginTop:-1 }}>
-                    <FormLabel component="legend"><b>Gender</b></FormLabel>
-                    <RadioGroup row name="gender">
-                      <FormControlLabel
-                        value="Male"
-                        control={<Radio />}
-                        label="Male"
-                        onChange={() => setFieldValue("gender", "Male")}
-                      />
-                      <FormControlLabel
-                        value="Female"
-                        control={<Radio />}
-                        label="Female"
-                        onChange={() => setFieldValue("gender", "Female")}
-                      />
-                      <FormControlLabel
-                        value="Others"
-                        control={<Radio />}
-                        label="Others"
-                        onChange={() => setFieldValue("gender", "Others")}
-                      />
-                    </RadioGroup>
-                    <ErrorMessage name="gender" component="div" style={{ color: "red" }} />
-                  </FormControl>
-                </Grid>
-                {/* Blood Group */}
-                <Grid size={{ xs: 12, sm: 6 }}>
-                  <Autocomplete
-                    options={bloodGroupOptions}
-                    size="small"
-                    getOptionLabel={(option) => option.label}
-                    onChange={(event, value) => setFieldValue("bloodGroup", value?.value || "")}
-                    renderInput={(params) => (
-                      <TextField
-                        {...params}
-                        label="Blood Group"
-                        error={errors.bloodGroup && touched.bloodGroup}
-                        helperText={<ErrorMessage name="bloodGroup" />}
-                      />
-                    )}
-                  />
-                </Grid>
-                {/* File Upload */}
-                <Grid size={{ xs: 12, sm: 6 }}>
-                  <Button
-                    variant="outlined"
-                    component="label"
-                    fullWidth
-                    color="black"
-                  >
-                    {selectedFile ? selectedFile : "Upload File"}
-                    <input
-                      hidden
-                      type="file"
-                      accept=".png,.jpg,.jpeg,.pdf"
+          <Typography
+            variant="h6"
+            gutterBottom
+            sx={{ display: "flex", justifyContent: "space-between" }}
+          >
+            {editIndex !== null ? "Edit Person" : "Add Person"}
+            <Button onClick={handleClose} color="black">
+              <ClearIcon />
+            </Button>
+          </Typography>
+          <Formik
+            initialValues={editIndex !== null ? data[editIndex] : initialValues}
+            validationSchema={validationSchema}
+            onSubmit={(values, { resetForm }) => {
+              handleSubmit(values);
+              resetForm();
+            }}
+          >
+            {({ errors, touched, setFieldValue, values }) => (
+              <Form>
+                <Grid container spacing={2}>
+                  <Grid size={{xs:12 ,sm:6}}>
+                    <Field
+                      as={TextField}
+                      label="First Name"
+                      name="firstName"
+                      fullWidth
+                      required
                       size="small"
-                      onChange={(e) => {
-                        const file = e.target.files[0];
-                        if (file) {
-                          if (
-                            !["image/png", "image/jpeg", "application/pdf"].includes(file.type)
-                          ) {
-                            alert("Only PNG, JPG, and PDF files are allowed.");
-                            return;
-                          }
-                          if (file.size > 5 * 1024 * 1024) {
-                            alert("File size must be less than or equal to 5 MB.");
-                            return;
-                          }
-                          setSelectedFile(file.name);
-                          setFieldValue("uploadedFile", file);
-                        }
-                      }}
+                      error={touched.firstName && !!errors.firstName}
+                      helperText={<ErrorMessage name="firstName" />}
                     />
-                  </Button>
-                  {errors.uploadedFile && touched.uploadedFile && (
-                    <Typography color="error" variant="body2">
-                      {errors.uploadedFile}
-                    </Typography>
-                  )}
+                  </Grid>
+                  <Grid size={{xs:12 ,sm:6}}>
+                    <Field
+                      as={TextField}
+                      label="Last Name"
+                      name="lastName"
+                      fullWidth
+                      required
+                      size="small"
+                      error={touched.lastName && !!errors.lastName}
+                      helperText={<ErrorMessage name="lastName" />}
+                    />
+                  </Grid>
+                  <Grid size={{xs:12 ,sm:6}}>
+                    <Field
+                      as={TextField}
+                      label="Email"
+                      name="email"
+                      fullWidth
+                      required
+                      size="small"
+                      error={touched.email && !!errors.email}
+                      helperText={<ErrorMessage name="email" />}
+                    />
+                  </Grid>
+                  <Grid size={{xs:12 ,sm:6}}>
+                    <Field name="dateOfBirth">
+                      {({ field, form }) => {
+                        const selectedDate = field.value
+                          ? new Date(field.value)
+                          : null;
+                        return (
+                          <DatePicker
+                            {...field}
+                            selected={selectedDate}
+                            onChange={(date) =>
+                              form.setFieldValue(
+                                "dateOfBirth",
+                                date
+                                  ? date.toISOString().split("T")[0]
+                                  : ""
+                              )
+                            }
+                            dateFormat="yyyy-MM-dd"
+                            placeholderText="Select Date of Birth"
+                            maxDate={new Date(2006, 11, 31)}
+                            showYearDropdown
+                            scrollableYearDropdown
+                            showMonthDropdown
+                            customInput={
+                              <TextField
+                                label="Date of Birth"
+                                fullWidth
+                                size="small"
+                                InputProps={{
+                                  endAdornment: (
+                                    <InputAdornment position="end">
+                                      <IconButton>
+                                        <CalendarTodayIcon />
+                                      </IconButton>
+                                    </InputAdornment>
+                                  ),
+                                }}
+                              />
+                            }
+                          />
+                        );
+                      }}
+                    </Field>
+                  </Grid>
+                  <Grid size={{xs:12 ,sm:6}}>
+                    <Field
+                      as={TextField}
+                      label="Mobile Number"
+                      name="mobileNumber"
+                      fullWidth
+                      required
+                      size="small"
+                      value={values.mobileNumber}
+                      onChange={(e) =>
+                        handleNumberInput(e, setFieldValue, "mobileNumber")
+                      }
+                      error={touched.mobileNumber && !!errors.mobileNumber}
+                      helperText={<ErrorMessage name="mobileNumber" />}
+                    />
+                  </Grid>
                 </Grid>
-                {/* Checkbox for Terms */}
-                <Grid size={{ xs: 12, sm: 6 }}>
-                  <FormControlLabel
-                    control={
-                      <Checkbox size="small" color="success"
-                        checked={values.newsletter}
-                        onChange={() => setFieldValue("newsletter", !values.newsletter)}
-                      />
-                    }
-                    label="Accept Terms and Conditions"
-                  />
-                  <ErrorMessage name="newsletter" component="div" style={{ color: "red" }} />
-                </Grid>
-                {/* Submit Button */}
-                <Grid size={{ xs: 12}} container justifyContent="flex-end">
+                <Box
+                  sx={{
+                    display: "flex",
+                    justifyContent: "flex-end",
+                    marginTop: 2,
+                  }}
+                >
                   <Button
-                    type="submit"
-                    variant="contained"
-                    sx={{
-                      borderRadius: 10,
-                      fontSize: 15,
-                      backgroundColor: "#01579B",
-                    }}
+                    onClick={handleClose}
+                    variant="outlined"
+                    color="secondary"
+                    sx={{ marginRight: 1 }}
                   >
-                    Submit
+                    Cancel
                   </Button>
-                </Grid>
-              </Grid>
-            </Form>
-          )}
-        </Formik>
-      </Card>
+                  <Button variant="contained" type="submit">
+                    {editIndex !== null ? "Update" : "Submit"}
+                  </Button>
+                </Box>
+              </Form>
+            )}
+          </Formik>
+        </Box>
+      </Modal>
+
+      <Box sx={{ marginTop: 2 }}>
+        <TableContainer component={Paper}>
+          <Table>
+            <TableHead>
+              <TableRow sx={{backgroundColor:"grey.200"}}>
+                <TableCell>First Name</TableCell>
+                <TableCell>Last Name</TableCell>
+                <TableCell>Email</TableCell>
+                <TableCell>Date of Birth</TableCell>
+                <TableCell>Mobile Number</TableCell>
+                <TableCell>Actions</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {data.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={6} align="center">
+                    No data found
+                  </TableCell>
+                </TableRow>
+              ) : (
+                data.map((row, index) => (
+                  <TableRow key={index}>
+                    <TableCell>{row.firstName}</TableCell>
+                    <TableCell>{row.lastName}</TableCell>
+                    <TableCell>{row.email}</TableCell>
+                    <TableCell>{row.dateOfBirth}</TableCell>
+                    <TableCell>{row.mobileNumber}</TableCell>
+                    <TableCell>
+                      <IconButton onClick={() => handleEdit(index)} color="primary">
+                        <EditIcon />
+                      </IconButton>
+                      <IconButton onClick={() => handleDelete(index)} color="error">
+                        <DeleteIcon />
+                      </IconButton>
+                      <Button onClick={() => handleShowData(row.id)}>
+                        Show Data
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </TableContainer>
+      </Box>
     </Box>
   );
 };
