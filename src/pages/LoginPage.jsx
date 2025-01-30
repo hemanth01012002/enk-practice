@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useEffect} from 'react';
+import { useSelector } from 'react-redux';
 import { useForm } from 'react-hook-form';
 import { Button, TextField, Box, Typography, Container, CssBaseline, Card, CardContent } from '@mui/material';
 import { useDispatch } from 'react-redux';
@@ -8,6 +9,7 @@ import { useNavigate } from 'react-router-dom';
 const LoginPage = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const isAuthenticated = useSelector((state) => state.auth.isAuthenticated);
 
   // Initialize React Hook Form
   const {
@@ -24,8 +26,17 @@ const LoginPage = () => {
   // Login handler
   const onSubmit = (data) => {
     dispatch(login(data.username)); // Dispatch login action
-    navigate('/userpage'); // Redirect to the user page
+    // localStorage.setItem('isAuthenticated', 'true'); // Store login state
+    navigate('/user', {replace: true}); // Redirect to the user 
   };
+    //  isAuthenticated
+    useEffect(() => {
+    if (isAuthenticated) {
+      navigate('/user', { replace: true }); 
+    }
+  }, [isAuthenticated, navigate]);
+
+  
 
   return (
     <Container component="main" maxWidth="xs">

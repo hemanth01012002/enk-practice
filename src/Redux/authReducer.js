@@ -1,23 +1,35 @@
-import { LOGIN, USERPAGE } from './authActions';
-
+// Redux auth slice (authSlice.js)
 const initialState = {
-  username: null, 
-};
-
-const actionHandlers = {
-  [LOGIN]: (state, action) => ({
-    ...state,
-    username: action.payload,
-  }),
-  [USERPAGE]: (state) => ({
-    ...state,
-    username: null,
-  }),
+  isAuthenticated: false,
+  user: null,
 };
 
 const authReducer = (state = initialState, action) => {
-  const handler = actionHandlers[action.type];
-  return handler ? handler(state, action) : state;
+  switch (action.type) {
+    case 'LOGIN':
+      return {
+        ...state,
+        isAuthenticated: true,
+        user: action.payload, // Optionally store user details
+      };
+    case 'LOGOUT':
+      return {
+        ...state,
+        isAuthenticated: false,
+        user: null,
+      };
+    default:
+      return state;
+  }
 };
 
 export default authReducer;
+
+export const login = (username) => ({
+  type: 'LOGIN',
+  payload: { username },
+});
+
+export const logout = () => ({
+  type: 'LOGOUT',
+});

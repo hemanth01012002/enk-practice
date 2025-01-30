@@ -114,6 +114,7 @@ const UserPage = ({ children }) => {
   };
 
   const handleLogout = () => {
+    //  localStorage.removeItem('isAuthenticated'); // Clear login state
     dispatch({ type: 'LOGOUT' });
     navigate('/');
   };
