@@ -1,8 +1,9 @@
 import React from 'react'
+import Getapi from './Mailpages/Getapi';
 
 function Mail() {
   return (
-    <div>Mail</div>
+    <Getapi/>
   )
 }
 
