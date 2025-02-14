@@ -6,22 +6,31 @@ const api = axios.create({
 });
 
 
-// export const post = () =>{   
-//     return api.post("/posts");
-// };
+export const post = (movieData) => {
+    return api.post('/movies', movieData);
+};
 
 
-export const get = () =>{
+export const get = () => {
     return api.get("/movies");
 };
 
-// export const deleted = (id) =>{
-//     return api.delete(`/posts/${id}`)
-// }
+export const deleted = (id) => {
+    return api.delete(`/movies/${id}`)
+}
 
-// export const putt = (currentPost) => {
-//     return api.put(`/posts/${currentPost.id}`, {
-//       title: currentPost.title,
-//       body: currentPost.body,
-//     });
-//   };
+// export const putt = (movie.id) => {
+//     return api.put(`/movies/${movie.id}`, movie);
+// };
+
+
+export const putt = (movie) => {
+    return api.put(`/movies/${movie.id}`, {
+      title: movie.title,
+      subject: movie.subject,
+      director: movie.director,
+      hero: movie.hero,
+      moviesName: movie.moviesName,
+    });
+  };
+
