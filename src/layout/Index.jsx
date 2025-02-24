@@ -23,6 +23,7 @@ import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import AccountCircleIcon from '@mui/icons-material/AccountCircle';
 import MovieFilterIcon from '@mui/icons-material/MovieFilter';
+import SettingsIcon from '@mui/icons-material/Settings';
 import { useDispatch } from 'react-redux';
 import { useNavigate, useLocation } from 'react-router-dom';
 import avatar from '../Assists/avatar-25.webp';
@@ -96,6 +97,7 @@ const Drawer = styled(MuiDrawer, { shouldForwardProp: (prop) => prop !== 'open' 
 const drawerItems = [
   { label: 'User', icon: <AccountCircleIcon sx={{ color: 'blue' }} />, route: '/user' },
   { label: 'Movies', icon: <MovieFilterIcon sx={{ color: 'blue' }} />, route: '/mail' },
+  // { label: 'Settings', icon: <SettingsIcon sx={{ color: 'blue' }} />, route: '/' },
 ];
 
 const UserPage = ({ children }) => {

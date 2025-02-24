@@ -2,12 +2,19 @@ import { post } from './APIMethods';
 
 export const PostApi = async (newMovie, setMovies, setFilteredMovies) => {
     try {
-        const response = await post(newMovie);
+        const formattedMovie = {
+            ...newMovie,
+           
+        };
+
+        const response = await post(formattedMovie);
 
         if (response.status === 201) {
-            const createdMovie = response.data;
+            const createdMovie = {
+                ...response.data,
+                
+            };
 
-            // Add the newly added movie to the state
             setMovies((prevMovies) => [...prevMovies, createdMovie]);
             setFilteredMovies((prevFilteredMovies) => [...prevFilteredMovies, createdMovie]);
 
